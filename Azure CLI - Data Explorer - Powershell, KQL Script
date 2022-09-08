@@ -1,0 +1,152 @@
+PS C:\WINDOWS\system32> az login --tenant '21910cc4-a37b-4f1e-9e11-4aca40505fae'
+A web browser has been opened at https://login.microsoftonline.com/21910cc4-a37b-4f1e-9e11-4aca40505fae/oauth2/v2.0/authorize. Please continue the login in the web browser. If no web browser is available or if the web browser fails to open, use device code flow with `az login --use-device-code`.
+[
+  {
+    "cloudName": "AzureCloud",
+    "homeTenantId": "21910cc4-a37b-4f1e-9e11-4aca40505fae",
+    "id": "612f64e7-2e6c-4441-87d3-04bd8516ba0c",
+    "isDefault": true,
+    "managedByTenants": [
+      {
+        "tenantId": "2f4a9838-26b7-47ee-be60-ccc1fdec5953"
+      }
+    ],
+    "name": "Azure subscription 1",
+    "state": "Enabled",
+    "tenantId": "21910cc4-a37b-4f1e-9e11-4aca40505fae",
+    "user": {
+      "name": "kellwyn.dba@gmail.com",
+      "type": "user"
+    }
+  }
+]
+
+PS C:\WINDOWS\system32> az extension add -n kusto
+PS C:\WINDOWS\system32> az group create --location "Australia East" --name adx-rg
+{
+  "id": "/subscriptions/612f64e7-2e6c-4441-87d3-04bd8516ba0c/resourceGroups/adx-rg",
+  "location": "australiaeast",
+  "managedBy": null,
+  "name": "adx-rg",
+  "properties": {
+    "provisioningState": "Succeeded"
+  },
+  "tags": null,
+  "type": "Microsoft.Resources/resourceGroups"
+}
+
+
+PS C:\WINDOWS\system32> $PROFILE
+
+PS C:\WINDOWS\system32> az kusto cluster create --location "Australia East" --cluster-name "adxyz$suffix" --resource-group adx-rg --sku name="Dev(no SLA)_Standard_D11_v2" capacity=1 tier="Basic"
+Command group 'kusto' is experimental and under development. Reference and support levels: https://aka.ms/CLI_refstatus
+{
+  "acceptedAudiences": [],
+  "allowedFqdnList": [],
+  "allowedIpRangeList": [],
+  "dataIngestionUri": "https://ingest-adxyz.australiaeast.kusto.windows.net",
+  "enableAutoStop": true,
+  "enableDiskEncryption": false,
+  "enableDoubleEncryption": false,
+  "enablePurge": false,
+  "enableStreamingIngest": false,
+  "engineType": "V3",
+  "etag": "\"2022-09-07T10:42:21.1405468Z\"",
+  "id": "/subscriptions/612f64e7-2e6c-4441-87d3-04bd8516ba0c/resourceGroups/adx-rg/providers/Microsoft.Kusto/Clusters/adxyz",
+  "identity": null,
+  "keyVaultProperties": null,
+  "languageExtensions": {
+    "value": []
+  },
+  "location": "Australia East",
+  "name": "adxyz",
+  "optimizedAutoscale": null,
+  "privateEndpointConnections": [],
+  "provisioningState": "Succeeded",
+  "publicIpType": "IPv4",
+  "publicNetworkAccess": "Enabled",
+  "resourceGroup": "adx-rg",
+  "restrictOutboundNetworkAccess": "Disabled",
+  "sku": {
+    "capacity": 1,
+    "name": "Dev(No SLA)_Standard_D11_v2",
+    "tier": "Basic"
+  },
+  "state": "Running",
+  "stateReason": null,
+  "systemData": null,
+  "tags": {},
+  "trustedExternalTenants": [
+    {
+      "value": "*"
+    }
+  ],
+  "type": "Microsoft.Kusto/Clusters",
+  "uri": "https://adxyz.australiaeast.kusto.windows.net",
+  "virtualClusterGraduationProperties": null,
+  "virtualNetworkConfiguration": null,
+  "zones": null
+}
+
+Stopping and starting an Azure Data Explorer cluster
+az kusto cluster stop --cluster-name "adxyz$suffix" --resource-group adx-rg 
+az kusto cluster start --cluster-name "adxyz$suffix" --resource-group adx-rg
+
+PS C:\WINDOWS\system32> az kusto database create --cluster-name "adxyz$suffix" --database-name telemetry --resource-group adx-rg --read-write-database location="Australia East"
+Command group 'kusto' is experimental and under development. Reference and support levels: https://aka.ms/CLI_refstatus
+{
+  "hotCachePeriod": null,
+  "id": "/subscriptions/612f64e7-2e6c-4441-87d3-04bd8516ba0c/resourceGroups/adx-rg/providers/Microsoft.Kusto/Clusters/adxyz/Databases/telemetry",
+  "isFollowed": false,
+  "kind": "ReadWrite",
+  "location": "Australia East",
+  "name": "adxyz/telemetry",
+  "provisioningState": "Succeeded",
+  "resourceGroup": "adx-rg",
+  "softDeletePeriod": null,
+  "statistics": {
+    "size": 0.0
+  },
+  "type": "Microsoft.Kusto/Clusters/Databases"
+}
+
+Granting Azure Data Explorer–level permissions
+PS C:\WINDOWS\system32> $me = az ad signed-in-user show --query objectId
+PS C:\WINDOWS\system32> $tenantId = az account show --query tenantId
+PS C:\WINDOWS\system32> az kusto cluster-principal-assignment create --cluster-name "adxyz$suffix" --principal-id $me --principal-type User --tenant-id $tenantId --role AllDatabasesAdmin --principal-assignment-name admin1
+
+
+Kusto Queries on Data Explorer:
+
+Created Database called Telemetry, and a table in the database caleld PageViews
+
+.create table PageViews(UserId: long, Page: string, Timestamp: datetime)
+
+.ingest inline into table PageViews <|
+57000, '/', datetime(2020-06-30 10:01:05)
+12345,'/about/', datetime(2020-06-30 10:06:00)
+57000,'/products/',datetime(2020-06-30 10:07:15)
+89943,'/', datetime(2020-06-30 10:15:43)
+89943,'/products', datetime(2020-06-30 10:21:50)
+24566,'/', datetime(2020-06-30 10:25:37)
+
+General All
+PageViews
+| take 100 
+
+Distinct Users
+PageViews
+| where Timestamp between (datetime(2020-06-30 10:00)..datetime(2020-06-30 10:30))
+| distinct UserId
+
+
+PageViews
+| where Timestamp between (datetime(2020-06-30 10:00)
+..datetime(2020-06-30 10:30))
+| summarize visits = count() by UserId
+| top 1 by visits
+
+
+
+Continued with Azure Data Lake.
+

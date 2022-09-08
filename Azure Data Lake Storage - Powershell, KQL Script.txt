@@ -1,0 +1,171 @@
+CREATE AZURE DATA LAKE STORAGE ACCOUNT, back to powershell
+
+PS C:\WINDOWS\system32> az group create --location "Australia East" --name adls-rg
+{
+  "id": "/subscriptions/620f64e7-2e6c-4441-87d3-04bd8516ba0c/resourceGroups/adls-rg",
+  "location": "australiaeast",
+  "managedBy": null,
+  "name": "adls-rg",
+  "properties": {
+    "provisioningState": "Succeeded"
+  },
+  "tags": null,
+  "type": "Microsoft.Resources/resourceGroups"
+}
+PS C:\WINDOWS\system32> az storage account create --name "adlssushanthek" --resource-group adls-rg --enable-hierarchical-namespace true
+{
+  "accessTier": "Hot",
+  "allowBlobPublicAccess": true,
+  "allowCrossTenantReplication": null,
+  "allowSharedKeyAccess": null,
+  "allowedCopyScope": null,
+  "azureFilesIdentityBasedAuthentication": null,
+  "blobRestoreStatus": null,
+  "creationTime": "2022-09-07T12:16:42.473349+00:00",
+  "customDomain": null,
+  "defaultToOAuthAuthentication": null,
+  "dnsEndpointType": null,
+  "enableHttpsTrafficOnly": true,
+  "enableNfsV3": null,
+  "encryption": {
+    "encryptionIdentity": null,
+    "keySource": "Microsoft.Storage",
+    "keyVaultProperties": null,
+    "requireInfrastructureEncryption": null,
+    "services": {
+      "blob": {
+        "enabled": true,
+        "keyType": "Account",
+        "lastEnabledTime": "2022-09-07T12:16:42.957801+00:00"
+      },
+      "file": {
+        "enabled": true,
+        "keyType": "Account",
+        "lastEnabledTime": "2022-09-07T12:16:42.957801+00:00"
+      },
+      "queue": null,
+      "table": null
+    }
+  },
+  "extendedLocation": null,
+  "failoverInProgress": null,
+  "geoReplicationStats": null,
+  "id": "/subscriptions/620f64e7-2e6c-4441-87d3-04bd8516ba0c/resourceGroups/adls-rg/providers/Microsoft.Storage/storageAccounts/adlssushanthek",
+  "identity": null,
+  "immutableStorageWithVersioning": null,
+  "isHnsEnabled": true,
+  "isLocalUserEnabled": null,
+  "isSftpEnabled": null,
+  "keyCreationTime": {
+    "key1": "2022-09-07T12:16:42.535864+00:00",
+    "key2": "2022-09-07T12:16:42.535864+00:00"
+  },
+  "keyPolicy": null,
+  "kind": "StorageV2",
+  "largeFileSharesState": null,
+  "lastGeoFailoverTime": null,
+  "location": "australiaeast",
+  "minimumTlsVersion": "TLS1_0",
+  "name": "adlssushanthek",
+  "networkRuleSet": {
+    "bypass": "AzureServices",
+    "defaultAction": "Allow",
+    "ipRules": [],
+    "resourceAccessRules": null,
+    "virtualNetworkRules": []
+  },
+  "primaryEndpoints": {
+    "blob": "https://adlssushanthek.blob.core.windows.net/",
+    "dfs": "https://adlssushanthek.dfs.core.windows.net/",
+    "file": "https://adlssushanthek.file.core.windows.net/",
+    "internetEndpoints": null,
+    "microsoftEndpoints": null,
+    "queue": "https://adlssushanthek.queue.core.windows.net/",
+    "table": "https://adlssushanthek.table.core.windows.net/",
+    "web": "https://adlssushanthek.z8.web.core.windows.net/"
+  },
+  "primaryLocation": "australiaeast",
+  "privateEndpointConnections": [],
+  "provisioningState": "Succeeded",
+  "publicNetworkAccess": null,
+  "resourceGroup": "adls-rg",
+  "routingPreference": null,
+  "sasPolicy": null,
+  "secondaryEndpoints": {
+    "blob": "https://adlssushanthek-secondary.blob.core.windows.net/",
+    "dfs": "https://adlssushanthek-secondary.dfs.core.windows.net/",
+    "file": null,
+    "internetEndpoints": null,
+    "microsoftEndpoints": null,
+    "queue": "https://adlssushanthek-secondary.queue.core.windows.net/",
+    "table": "https://adlssushanthek-secondary.table.core.windows.net/",
+    "web": "https://adlssushanthek-secondary.z8.web.core.windows.net/"
+  },
+  "secondaryLocation": "australiasoutheast",
+  "sku": {
+    "name": "Standard_RAGRS",
+    "tier": "Standard"
+  },
+  "statusOfPrimary": "available",
+  "statusOfSecondary": "available",
+  "storageAccountSkuConversionStatus": null,
+  "tags": {},
+  "type": "Microsoft.Storage/storageAccounts"
+}
+
+Provisioning a filesystem
+PS C:\WINDOWS\system32> az storage fs create --account-name "adlssushanthek" --name fs1
+
+{
+  "client_request_id": "9206d6ad-2ea7-11ed-b136-0019d2e49412",
+  "date": "2022-09-07T12:21:11+00:00",
+  "etag": "\"0x8DA90CB73E6A016\"",
+  "last_modified": "2022-09-07T12:21:12+00:00",
+  "request_id": "e075163c-301e-00b8-06b4-c28d16000000",
+  "version": "2021-08-06"
+}
+Listing files in a filesystem
+PS C:\WINDOWS\system32> az storage fs file list --account-name "adlssushanthek" --file-system fs1
+
+[]
+
+Uploading a file to Azure Data Lake Storage
+
+PS C:\WINDOWS\system32> echo "Hello world!" |  Out-File -FilePath hello.txt
+PS C:\WINDOWS\system32> az storage fs file upload --account-name "adlssushanthek"--file-system fs1 --path hello.txt --source hello.txt
+
+Got the below error, but verified the file copied to te container
+  File "genericpath.py", line 50, in getsize
+FileNotFoundError: [WinError 2] The system cannot find the file specified: 'hello.txt'
+
+
+PS C:\WINDOWS\system32> az storage fs file list --account-name "adlssushanthek" --file-system fs1
+
+[
+  {
+    "contentLength": 0,
+    "creationTime": "2022-09-07T12:28:10.569332+00:00",
+    "encryptionScope": null,
+    "etag": "0x8DA90CC6D2C4885",
+    "expiryTime": null,
+    "group": "$superuser",
+    "isDirectory": false,
+    "lastModified": "2022-09-07T12:28:10",
+    "name": "hello.txt",
+    "owner": "$superuser",
+    "permissions": "rw-r-----"
+  }
+]
+
+INTEGRATING WITH AZURE DATA EXPLORER
+
+PS C:\WINDOWS\system32> echo "https://adlssushanthek.blob.core.windows.net/fs1/;"
+
+https://adlssushanthek.blob.core.windows.net/fs1/;
+
+PS C:\WINDOWS\system32> az storage account keys list --account-name "adlssushanthek" --query [0].value
+
+"9pBQ0FK20rSwqE1Vo/Ee1Xj4ArSyzpiPpn9AtEQhxH/KiXdIw51AP20IvmDI/1109MEPZZLHVCU4+AStzyN5/Q=="
+
+
+
